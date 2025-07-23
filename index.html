@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager Pro - Complete Task Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --bg-light: #f8f9fa;
+            --text-dark: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            min-height: calc(100vh - 40px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .nav-tabs {
+            border-bottom: none;
+            background: var(--bg-light);
+            border-radius: 0;
+            padding: 0 2rem;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            background: transparent;
+            color: var(--text-dark);
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            border-radius: 10px 10px 0 0;
+            margin-right: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: white;
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--secondary-color);
+        }
+
+        .tab-content {
+            padding: 2rem;
+            background: white;
+            min-height: 500px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--bg-light) 0%, #e9ecef 100%);
+            border-bottom: none;
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 0.5rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, #2980b9 100%);
+            border: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color) 0%, #229954 100%);
+            border: none;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-color) 0%, #d68910 100%);
+            border: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #c0392b 100%);
+            border: none;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .task-item {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 5px solid var(--secondary-color);
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-item.high-priority {
+            border-left-color: var(--danger-color);
+        }
+
+        .task-item.medium-priority {
+            border-left-color: var(--warning-color);
+        }
+
+        .task-item.low-priority {
+            border-left-color: var(--success-color);
+        }
+
+        .priority-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .priority-high {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .priority-medium {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .priority-low {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #6c757d;
+            color: white;
+        }
+
+        .status-in-progress {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .status-completed {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .api-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .api-connected {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .api-disconnected {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .header {
+                padding: 1.5rem;
+                border-radius: 15px 15px 0 0;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .tab-content {
+                padding: 1rem;
+            }
+
+            .action-buttons {
+                justify-content: center;
+            }
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
+        .toast {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .modal-header {
+            border-bottom: none;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .modal-footer {
+            border-top: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header">
+                <h1><i class="fas fa-tasks"></i> Task Manager Pro</h1>
+                <p>Complete Task Management with Google Integration</p>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard"
+                        type="button" role="tab">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button"
+                        role="tab">
+                        <i class="fas fa-list"></i> Tasks
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="integrations-tab" data-bs-toggle="tab" data-bs-target="#integrations"
+                        type="button" role="tab">
+                        <i class="fas fa-plug"></i> Integrations
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics"
+                        type="button" role="tab">
+                        <i class="fas fa-chart-bar"></i> Analytics
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="mainTabContent">
+                <!-- Dashboard Tab -->
+                <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="stats-card">
+                                <div class="stats-number" id="totalTasks">0</div>
+                                <div class="stats-label">Total Tasks</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="stats-card">
+                                <div class="stats-number" id="pendingTasks">0</div>
+                                <div class="stats-label">Pending</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="stats-card">
+                                <div class="stats-number" id="completedTasks">0</div>
+                                <div class="stats-label">Completed</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="stats-card">
+                                <div class="stats-number" id="overdueTasks">0</div>
+                                <div class="stats-label">Overdue</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-clock"></i> Recent Tasks</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="recentTasks"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-cog"></i> Quick Actions</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary" onclick="showCreateTaskModal()">
+                                            <i class="fas fa-plus"></i> Create Task
+                                        </button>
+                                        <button class="btn btn-success" onclick="exportToSheets()">
+                                            <i class="fab fa-google-drive"></i> Export to Sheets
+                                        </button>
+                                        <button class="btn btn-warning" onclick="sendEmailReminders()">
+                                            <i class="fas fa-envelope"></i> Send Reminders
+                                        </button>
+                                        <div class="dropdown">
+                                            <button class="btn btn-secondary dropdown-toggle w-100" type="button"
+                                                id="automatedRemindersDropdown" data-bs-toggle="dropdown">
+                                                <i class="fas fa-robot"></i> Automated Reminders
+                                            </button>
+                                            <ul class="dropdown-menu w-100">
+                                                <li><a class="dropdown-item" href="#" onclick="checkReminderStatus()">
+                                                        <i class="fas fa-info-circle"></i> Check Status
+                                                    </a></li>
+                                                <li><a class="dropdown-item" href="#"
+                                                        onclick="startAutomatedReminders()">
+                                                        <i class="fas fa-play"></i> Start Auto Reminders
+                                                    </a></li>
+                                                <li><a class="dropdown-item" href="#"
+                                                        onclick="stopAutomatedReminders()">
+                                                        <i class="fas fa-stop"></i> Stop Auto Reminders
+                                                    </a></li>
+                                                <li>
+                                                    <hr class="dropdown-divider">
+                                                </li>
+                                                <li><a class="dropdown-item" href="#" onclick="triggerReminderCheck()">
+                                                        <i class="fas fa-sync"></i> Check Now (Test)
+                                                    </a></li>
+                                            </ul>
+                                        </div>
+                                        <button class="btn btn-info" onclick="refreshDashboard()">
+                                            <i class="fas fa-sync-alt"></i> Refresh Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Tab -->
+                <div class="tab-pane fade" id="tasks" role="tabpanel">
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <h4><i class="fas fa-list"></i> Task Management</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-primary w-100" onclick="showCreateTaskModal()">
+                                <i class="fas fa-plus"></i> Create New Task
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <select class="form-control" id="filterStatus" onchange="filterTasks()">
+                                        <option value="">All Status</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="completed">Completed</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-control" id="filterPriority" onchange="filterTasks()">
+                                        <option value="">All Priorities</option>
+                                        <option value="high">High</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="low">Low</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="searchTasks"
+                                        placeholder="Search tasks..." onkeyup="filterTasks()">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                                        <i class="fas fa-times"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tasks List -->
+                    <div id="tasksList"></div>
+                </div>
+
+                <!-- Integrations Tab -->
+                <div class="tab-pane fade" id="integrations" role="tabpanel">
+                    <h4><i class="fas fa-plug"></i> Google API Integrations</h4>
+
+                    <div class="row">
+                        <!-- Gmail Integration -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-envelope"></i> Gmail Integration</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Send task reminders via email</p>
+                                    <div id="gmailStatus" class="mb-3"></div>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary" onclick="testGmailConnection()">
+                                            <i class="fas fa-plug"></i> Test Connection
+                                        </button>
+                                        <button class="btn btn-success" onclick="sendEmailReminders()">
+                                            <i class="fas fa-paper-plane"></i> Send Reminders
+                                        </button>
+                                        <button class="btn btn-warning" onclick="configureMail()">
+                                            <i class="fas fa-cog"></i> Configure
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sheets Integration -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fab fa-google-drive"></i> Sheets Integration</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Export tasks to Google Sheets</p>
+                                    <div id="sheetsStatus" class="mb-3"></div>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary" onclick="testSheetsConnection()">
+                                            <i class="fas fa-plug"></i> Test Connection
+                                        </button>
+                                        <button class="btn btn-success" onclick="exportToSheets()">
+                                            <i class="fas fa-download"></i> Export Tasks
+                                        </button>
+                                        <button class="btn btn-warning" onclick="configureSheets()">
+                                            <i class="fas fa-cog"></i> Configure
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calendar Integration -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-calendar"></i> Calendar Integration</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Add tasks to Google Calendar</p>
+                                    <div id="calendarStatus" class="mb-3"></div>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary" onclick="testCalendarConnection()">
+                                            <i class="fas fa-plug"></i> Test Connection
+                                        </button>
+                                        <button class="btn btn-success" onclick="syncAllToCalendar()">
+                                            <i class="fas fa-sync"></i> Sync All Tasks
+                                        </button>
+                                        <button class="btn btn-warning" onclick="configureCalendar()">
+                                            <i class="fas fa-cog"></i> Configure
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Integration Logs -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-list-alt"></i> Integration Activity Log</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="integrationLogs" style="max-height: 300px; overflow-y: auto;">
+                                <!-- Logs will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div class="tab-pane fade" id="analytics" role="tabpanel">
+                    <h4><i class="fas fa-chart-bar"></i> Task Analytics</h4>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Task Status Distribution</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="statusChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Priority Distribution</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="priorityChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Task Creation Trend</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="trendChart" width="800" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Task Modal -->
+    <div class="modal fade" id="taskModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskModalTitle">Create New Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <input type="hidden" id="taskId">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="taskTitle" class="form-label">Task Title *</label>
+                                    <input type="text" class="form-control" id="taskTitle" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="taskPriority" class="form-label">Priority</label>
+                                    <select class="form-control" id="taskPriority">
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="taskStatus" class="form-label">Status</label>
+                                    <select class="form-control" id="taskStatus">
+                                        <option value="pending" selected>Pending</option>
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="completed">Completed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="taskDueDate" class="form-label">Due Date</label>
+                                    <input type="datetime-local" class="form-control" id="taskDueDate">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="taskDescription" rows="4"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="addToCalendar">
+                                    <label class="form-check-label" for="addToCalendar">
+                                        Add to Google Calendar
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTask()">
+                        <i class="fas fa-save"></i> Save Task
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="task-manager.js"></script>
+</body>
+
+</html>

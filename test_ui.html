@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Task Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>🧪 Task Manager CRUD Test</h1>
+
+        <div class="test-section">
+            <h3>Create New Task</h3>
+            <input type="text" id="taskTitle" placeholder="Task Title" value="Test Task from Web UI">
+            <textarea id="taskDescription"
+                placeholder="Task Description">This is a test task created from the web UI test page.</textarea>
+            <select id="taskPriority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+            </select>
+            <input type="datetime-local" id="taskDueDate" value="2025-07-25T16:00">
+            <br>
+            <button onclick="createTask()">Create Task</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Quick Tests</h3>
+            <button onclick="testAPI()">Test API Health</button>
+            <button onclick="loadTasks()">Load All Tasks</button>
+            <button onclick="testCreateTask()">Quick Create Test</button>
+            <button onclick="testUpdateTask()">Test Update</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:5000';
+        let lastCreatedTaskId = null;
+
+        function addResult(message, type = 'success') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testAPI() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                addResult(`API Health: ${JSON.stringify(data)}`, 'success');
+            } catch (error) {
+                addResult(`API Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                const data = await response.json();
+                const taskCount = data.data ? data.data.count : (Array.isArray(data) ? data.length : 0);
+                addResult(`Loaded ${taskCount} tasks successfully`, 'success');
+            } catch (error) {
+                addResult(`Load Tasks Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function createTask() {
+            const taskData = {
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDescription').value,
+                priority: document.getElementById('taskPriority').value,
+                due_date: document.getElementById('taskDueDate').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    const task = result.data?.task || result.data || result;
+                    lastCreatedTaskId = task.id;
+                    addResult(`✅ Task created successfully! ID: ${task.id} - "${task.title}"`, 'success');
+                } else {
+                    addResult(`❌ Create failed: ${result.error || result.message}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Create error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCreateTask() {
+            const quickTask = {
+                title: `Quick Test Task - ${new Date().toLocaleTimeString()}`,
+                description: 'Automated test task',
+                priority: 'high',
+                due_date: '2025-07-25T17:30:00'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(quickTask)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    const task = result.data?.task || result.data || result;
+                    lastCreatedTaskId = task.id;
+                    addResult(`✅ Quick task created! ID: ${task.id}`, 'success');
+                } else {
+                    addResult(`❌ Quick create failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Quick create error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUpdateTask() {
+            if (!lastCreatedTaskId) {
+                addResult('⚠️ No task to update. Create a task first.', 'warning');
+                return;
+            }
+
+            const updateData = {
+                title: `Updated Task - ${new Date().toLocaleTimeString()}`,
+                status: 'completed'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${lastCreatedTaskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    addResult(`✅ Task ${lastCreatedTaskId} updated successfully!`, 'success');
+                } else {
+                    addResult(`❌ Update failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Update error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load API status on page load
+        window.onload = function () {
+            addResult('🚀 Task Manager Test Page Loaded', 'success');
+            testAPI();
+        };
+    </script>
+</body>
+
+</html>

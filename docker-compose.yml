@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  task-manager-api:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./credentials:/app/credentials:ro
+      - ./task_manager.db:/app/task_manager.db
+      - ./logs:/app/logs
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=False
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import requests; requests.get('http://localhost:5000/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a reverse proxy (nginx)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - task-manager-api
+    restart: unless-stopped
+
+volumes:
+  task_data:
+  log_data:
