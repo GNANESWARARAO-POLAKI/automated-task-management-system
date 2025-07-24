@@ -21,6 +21,10 @@ class User:
     is_active: bool = True
     timezone: str = 'UTC'
     notification_preferences: str = 'both'  # email, calendar, both, none
+    google_credentials: Optional[str] = None
+    google_calendar_enabled: bool = False
+    google_sheets_enabled: bool = False
+    google_gmail_enabled: bool = False
     
     def __post_init__(self):
         if self.created_at is None:
@@ -55,7 +59,15 @@ class User:
         if user_data.get('updated_at'):
             user_data['updated_at'] = datetime.fromisoformat(user_data['updated_at'])
         
-        return cls(**user_data)
+        # Filter to only include fields that exist in the User dataclass
+        valid_fields = {
+            'email', 'name', 'password_hash', 'created_at', 'updated_at', 
+            'id', 'is_active', 'timezone', 'notification_preferences',
+            'google_credentials', 'google_calendar_enabled', 'google_sheets_enabled', 'google_gmail_enabled'
+        }
+        filtered_data = {k: v for k, v in user_data.items() if k in valid_fields}
+        
+        return cls(**filtered_data)
     
     def to_dict(self, include_password=False) -> Dict[str, Any]:
         """Convert User to dictionary"""
