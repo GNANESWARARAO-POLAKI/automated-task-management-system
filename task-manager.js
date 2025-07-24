@@ -13,12 +13,14 @@ class TaskManager {
             sheets: false,
             calendar: false
         };
+        this.currentUser = null;  // Store current user info
         this.init();
     }
 
     async init() {
         try {
             await this.checkAPIHealth();
+            this.loadCurrentUser();  // Load user session
             await this.loadTasks();
             this.updateDashboard();
             this.checkIntegrationStatus();
@@ -40,6 +42,38 @@ class TaskManager {
                 }
             });
         });
+
+        // User management form listeners
+        this.setupUserFormListeners();
+    }
+
+    setupUserFormListeners() {
+        // Login form
+        const loginForm = document.getElementById('loginFormData');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleLogin();
+            });
+        }
+
+        // Register form
+        const registerForm = document.getElementById('registerFormData');
+        if (registerForm) {
+            registerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleRegister();
+            });
+        }
+
+        // Edit profile form
+        const editForm = document.getElementById('editProfileFormData');
+        if (editForm) {
+            editForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleEditProfile();
+            });
+        }
     }
 
     // API Health Check
@@ -892,7 +926,7 @@ async function checkReminderStatus() {
                 
                 • Running: ${status.running ? '✅ Active' : '❌ Stopped'}
                 • Gmail: ${status.gmail_initialized ? '✅ Connected' : '❌ Not Connected'}
-                • Email: ${status.recipient_email}
+                • Default Email: ${status.default_email || 'Not set'}
                 • 24h Reminders Sent: ${status.reminders_sent_24h}
                 • 1h Reminders Sent: ${status.reminders_sent_1h}
                 • Total Reminders: ${status.total_reminders_sent}
@@ -986,3 +1020,295 @@ async function triggerReminderCheck() {
         taskManager.showToast(error.message || 'Failed to check reminders', 'error');
     }
 }
+
+// User Management Functions
+
+function showLoginForm() {
+    hideUserForms();
+    document.getElementById('loginForm').style.display = 'block';
+}
+
+function showRegisterForm() {
+    hideUserForms();
+    document.getElementById('registerForm').style.display = 'block';
+}
+
+function showEditProfile() {
+    hideUserForms();
+    if (taskManager.currentUser) {
+        // Pre-fill form with current user data
+        document.getElementById('editName').value = taskManager.currentUser.name || '';
+        document.getElementById('editTimezone').value = taskManager.currentUser.timezone || 'UTC';
+        document.getElementById('editNotifications').value = taskManager.currentUser.notification_preferences || 'both';
+        document.getElementById('editProfileForm').style.display = 'block';
+    }
+}
+
+function hideUserForms() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('editProfileForm').style.display = 'none';
+}
+
+function logout() {
+    taskManager.currentUser = null;
+    localStorage.removeItem('taskManagerUser');
+    taskManager.updateUserDisplay();
+    taskManager.showToast('Logged out successfully', 'success');
+}
+
+// Add user management methods to TaskManager class
+Object.assign(TaskManager.prototype, {
+
+    loadCurrentUser() {
+        // Load user from localStorage (simple session management)
+        const userData = localStorage.getItem('taskManagerUser');
+        if (userData) {
+            try {
+                this.currentUser = JSON.parse(userData);
+                this.updateUserDisplay();
+            } catch (error) {
+                console.error('Failed to load user data:', error);
+                localStorage.removeItem('taskManagerUser');
+            }
+        }
+    },
+
+    updateUserDisplay() {
+        const notLoggedIn = document.getElementById('notLoggedIn');
+        const loggedIn = document.getElementById('loggedIn');
+
+        if (this.currentUser) {
+            notLoggedIn.style.display = 'none';
+            loggedIn.style.display = 'block';
+
+            document.getElementById('userName').textContent = this.currentUser.name || '-';
+            document.getElementById('userEmail').textContent = this.currentUser.email || '-';
+            document.getElementById('userTimezone').textContent = this.currentUser.timezone || '-';
+            document.getElementById('userNotifications').textContent = this.currentUser.notification_preferences || '-';
+        } else {
+            notLoggedIn.style.display = 'block';
+            loggedIn.style.display = 'none';
+        }
+    },
+
+    showLoginPrompt() {
+        // Switch to user tab and show login form
+        const userTab = document.getElementById('user-tab');
+        if (userTab) {
+            userTab.click();
+        }
+
+        // Show login message in tasks area
+        const tasksContainer = document.getElementById('tasksContainer');
+        if (tasksContainer) {
+            tasksContainer.innerHTML = `
+                <div class="alert alert-warning text-center" role="alert">
+                    <h4><i class="fas fa-lock"></i> Authentication Required</h4>
+                    <p>Please login to view your tasks. Go to the <strong>User</strong> tab to login or register.</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('user-tab').click(); showLoginForm();">
+                        <i class="fas fa-sign-in-alt"></i> Login Now
+                    </button>
+                </div>
+            `;
+        }
+
+        this.showToast('Please login to access your tasks', 'warning');
+    },
+
+    async handleLogin() {
+        try {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const response = await fetch(`${this.baseURL}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.currentUser = data.data;
+                localStorage.setItem('taskManagerUser', JSON.stringify(this.currentUser));
+                this.updateUserDisplay();
+                hideUserForms();
+                this.showToast('Login successful!', 'success');
+
+                // Reload tasks for this user
+                await this.loadTasks();
+                this.updateDashboard();
+            } else {
+                this.showToast(data.error || 'Login failed', 'error');
+            }
+
+        } catch (error) {
+            console.error('Login error:', error);
+            this.showToast('Login failed. Please try again.', 'error');
+        }
+    },
+
+    async handleRegister() {
+        try {
+            const userData = {
+                name: document.getElementById('registerName').value,
+                email: document.getElementById('registerEmail').value,
+                password: document.getElementById('registerPassword').value,
+                timezone: document.getElementById('registerTimezone').value,
+                notification_preferences: document.getElementById('registerNotifications').value
+            };
+
+            const response = await fetch(`${this.baseURL}/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showToast('Registration successful! Please login.', 'success');
+                hideUserForms();
+                showLoginForm();
+
+                // Pre-fill login form with registered email
+                document.getElementById('loginEmail').value = userData.email;
+            } else {
+                this.showToast(data.error || 'Registration failed', 'error');
+            }
+
+        } catch (error) {
+            console.error('Registration error:', error);
+            this.showToast('Registration failed. Please try again.', 'error');
+        }
+    },
+
+    async handleEditProfile() {
+        try {
+            if (!this.currentUser) {
+                this.showToast('Please login first', 'error');
+                return;
+            }
+
+            const updateData = {
+                user_id: this.currentUser.id,
+                name: document.getElementById('editName').value,
+                timezone: document.getElementById('editTimezone').value,
+                notification_preferences: document.getElementById('editNotifications').value
+            };
+
+            const password = document.getElementById('editPassword').value;
+            if (password) {
+                updateData.password = password;
+            }
+
+            const response = await fetch(`${this.baseURL}/auth/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.currentUser = data.data;
+                localStorage.setItem('taskManagerUser', JSON.stringify(this.currentUser));
+                this.updateUserDisplay();
+                hideUserForms();
+                this.showToast('Profile updated successfully!', 'success');
+            } else {
+                this.showToast(data.error || 'Update failed', 'error');
+            }
+
+        } catch (error) {
+            console.error('Profile update error:', error);
+            this.showToast('Update failed. Please try again.', 'error');
+        }
+    }
+});
+
+// Update loadTasks method to support user-specific tasks
+const originalLoadTasks = TaskManager.prototype.loadTasks;
+TaskManager.prototype.loadTasks = async function () {
+    try {
+        // Check if user is logged in
+        if (!this.currentUser || !this.currentUser.id) {
+            // Clear tasks and show login message
+            this.tasks = [];
+            this.filteredTasks = [];
+            this.renderTasks();
+            this.showLoginPrompt();
+            return;
+        }
+
+        let url = `${this.baseURL}/tasks?user_id=${this.currentUser.id}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            this.tasks = data.data.tasks || [];
+            this.filteredTasks = [...this.tasks];
+            this.renderTasks();
+            this.showToast(`Loaded ${this.tasks.length} tasks for ${data.data.user.name}`, 'success');
+        } else {
+            if (data.error.includes('authentication required') || data.error.includes('Invalid user')) {
+                this.showLoginPrompt();
+            } else {
+                throw new Error(data.error || 'Failed to load tasks');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading tasks:', error);
+        if (error.message.includes('401') || error.message.includes('authentication')) {
+            this.showLoginPrompt();
+        } else {
+            this.showToast('Failed to load tasks', 'error');
+        }
+    }
+};
+
+// Update createTask method to include user_id
+const originalCreateTask = TaskManager.prototype.createTask;
+TaskManager.prototype.createTask = async function (taskData) {
+    try {
+        // Add user_id if user is logged in
+        if (this.currentUser && this.currentUser.id) {
+            taskData.user_id = this.currentUser.id;
+        }
+
+        const response = await fetch(`${this.baseURL}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            await this.loadTasks();
+            this.updateDashboard();
+            this.showToast('Task created successfully!', 'success');
+
+            // Reset form
+            document.getElementById('taskForm').reset();
+
+            return data.data.task;
+        } else {
+            throw new Error(data.error || 'Failed to create task');
+        }
+    } catch (error) {
+        console.error('Error creating task:', error);
+        this.showToast(error.message || 'Failed to create task', 'error');
+        throw error;
+    }
+};

@@ -27,7 +27,7 @@ class AutomatedReminderSystem:
     def __init__(self):
         self.db_manager = DatabaseManager()
         self.gmail_service = None
-        self.recipient_email = "chandu0polaki@gmail.com"  # Default recipient
+        self.default_email = "chandu0polaki@gmail.com"  # Fallback email
         self.running = False
         self.reminder_thread = None
         
@@ -182,6 +182,9 @@ class AutomatedReminderSystem:
             
             task_obj = SimpleTask(task)
             
+            # Determine recipient email
+            recipient_email = task.get('user_email') or self.default_email
+            
             # Create custom message for automated reminder
             if reminder_type == '24h':
                 custom_message = f"🔔 AUTOMATED REMINDER: This task is due tomorrow! Please review and complete '{task['title']}' by {task['due_date']}."
@@ -191,7 +194,7 @@ class AutomatedReminderSystem:
             # Send email using existing Gmail service
             result = self.gmail_service.send_task_reminder(
                 task=task_obj,
-                recipient_email=self.recipient_email,
+                recipient_email=recipient_email,
                 custom_message=custom_message
             )
             
@@ -281,7 +284,7 @@ class AutomatedReminderSystem:
         return {
             'running': self.running,
             'gmail_initialized': self.gmail_service is not None,
-            'recipient_email': self.recipient_email,
+            'default_email': self.default_email,
             'reminders_sent_24h': len(self.sent_reminders['24h']),
             'reminders_sent_1h': len(self.sent_reminders['1h']),
             'total_reminders_sent': len(self.sent_reminders['24h']) + len(self.sent_reminders['1h'])

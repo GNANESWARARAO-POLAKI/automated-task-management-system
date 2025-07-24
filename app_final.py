@@ -121,16 +121,233 @@ def get_server_time():
         logger.error(f"Error getting system time: {str(e)}")
         return error_response("Failed to get system time", 500)
 
+# User Management Endpoints
+
+@app.route('/auth/register', methods=['POST'])
+def register_user():
+    """Register a new user"""
+    try:
+        data = request.get_json()
+        if not data:
+            return error_response("No data provided", 400)
+        
+        # Validate required fields
+        required_fields = ['email', 'name', 'password']
+        for field in required_fields:
+            if not data.get(field):
+                return error_response(f"Missing required field: {field}", 400)
+        
+        from models.user import User
+        
+        # Check if user already exists
+        existing_user = db_manager.get_user_by_email(data['email'])
+        if existing_user:
+            return error_response("User with this email already exists", 400)
+        
+        # Create new user
+        user = User(
+            email=data['email'].strip().lower(),
+            name=data['name'].strip(),
+            timezone=data.get('timezone', 'UTC'),
+            notification_preferences=data.get('notification_preferences', 'both')
+        )
+        
+        # Validate email format
+        if not user.validate_email():
+            return error_response("Invalid email format", 400)
+        
+        # Set password
+        user.set_password(data['password'])
+        
+        # Save to database
+        created_user = db_manager.create_user(user)
+        
+        logger.info(f"User registered successfully: {created_user.email}")
+        return success_response(
+            created_user.to_dict(),
+            "User registered successfully",
+            201
+        )
+        
+    except ValueError as e:
+        return error_response(str(e), 400)
+    except Exception as e:
+        logger.error(f"Error registering user: {str(e)}")
+        return error_response("Registration failed", 500)
+
+@app.route('/auth/login', methods=['POST'])
+def login_user():
+    """Login user and return authentication token"""
+    try:
+        data = request.get_json()
+        if not data:
+            return error_response("No data provided", 400)
+        
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        if not email or not password:
+            return error_response("Email and password are required", 400)
+        
+        # Get user by email
+        user = db_manager.get_user_by_email(email)
+        if not user:
+            return error_response("Invalid email or password", 401)
+        
+        # Check password
+        if not user.check_password(password):
+            return error_response("Invalid email or password", 401)
+        
+        # For now, we'll skip JWT token generation and just return user info
+        # In a production environment, you'd want to implement proper JWT tokens
+        
+        user.update_last_activity()
+        db_manager.update_user(user)
+        
+        response_data = user.to_dict()
+        response_data['session_token'] = f"simple_token_{user.id}_{datetime.now().isoformat()}"
+        
+        logger.info(f"User logged in successfully: {user.email}")
+        return success_response(
+            response_data,
+            "Login successful"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error during login: {str(e)}")
+        return error_response("Login failed", 500)
+
+@app.route('/auth/profile', methods=['GET'])
+def get_user_profile():
+    """Get current user profile (simplified auth)"""
+    try:
+        # For now, we'll use a simple user_id parameter
+        # In production, you'd extract this from JWT token
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return error_response("User ID required", 400)
+        
+        user = db_manager.get_user_by_id(int(user_id))
+        if not user:
+            return error_response("User not found", 404)
+        
+        return success_response(user.to_dict(), "Profile retrieved successfully")
+        
+    except ValueError:
+        return error_response("Invalid user ID", 400)
+    except Exception as e:
+        logger.error(f"Error getting user profile: {str(e)}")
+        return error_response("Failed to get profile", 500)
+
+@app.route('/auth/profile', methods=['PUT'])
+def update_user_profile():
+    """Update user profile"""
+    try:
+        data = request.get_json()
+        if not data:
+            return error_response("No data provided", 400)
+        
+        user_id = data.get('user_id')
+        if not user_id:
+            return error_response("User ID required", 400)
+        
+        user = db_manager.get_user_by_id(int(user_id))
+        if not user:
+            return error_response("User not found", 404)
+        
+        # Update allowed fields
+        if 'name' in data:
+            user.name = data['name'].strip()
+        if 'timezone' in data:
+            user.timezone = data['timezone']
+        if 'notification_preferences' in data:
+            user.notification_preferences = data['notification_preferences']
+        if 'password' in data and data['password']:
+            user.set_password(data['password'])
+        
+        updated_user = db_manager.update_user(user)
+        
+        logger.info(f"User profile updated: {updated_user.email}")
+        return success_response(updated_user.to_dict(), "Profile updated successfully")
+        
+    except ValueError:
+        return error_response("Invalid user ID", 400)
+    except Exception as e:
+        logger.error(f"Error updating user profile: {str(e)}")
+        return error_response("Failed to update profile", 500)
+
+@app.route('/users', methods=['GET'])
+def get_all_users():
+    """Get all users (admin functionality)"""
+    try:
+        users = db_manager.get_all_users()
+        users_data = [user.to_dict() for user in users]
+        
+        return success_response(users_data, f"Retrieved {len(users)} users")
+        
+    except Exception as e:
+        logger.error(f"Error getting all users: {str(e)}")
+        return error_response("Failed to get users", 500)
+
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
-    """Get all tasks with optional filtering"""
+    """Get tasks with user authentication required"""
     try:
         # Get query parameters
         status = request.args.get('status')
         priority = request.args.get('priority')
         limit = request.args.get('limit', type=int)
+        user_id = request.args.get('user_id', type=int)  # For user-specific tasks
         
-        # Get tasks from database
+        # Require user_id parameter for security
+        if not user_id:
+            return error_response("User authentication required. Please provide user_id parameter.", 401)
+        
+        # Verify user exists
+        user = db_manager.get_user_by_id(user_id)
+        if not user:
+            return error_response("Invalid user ID", 404)
+        
+        # Get user-specific tasks only
+        tasks = db_manager.get_tasks_by_user(user_id, status=status)
+        
+        # Apply additional filters
+        if priority:
+            tasks = [task for task in tasks if task.priority == priority]
+        if limit:
+            tasks = tasks[:limit]
+        
+        tasks_data = {
+            'tasks': [task.to_dict() for task in tasks],
+            'count': len(tasks),
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'email': user.email
+            },
+            'filters': {
+                'status': status,
+                'priority': priority,
+                'limit': limit,
+                'user_id': user_id
+            }
+        }
+        
+        return success_response(tasks_data, f"Retrieved {len(tasks)} tasks for {user.name}")
+        
+    except Exception as e:
+        logger.error(f"Error retrieving tasks: {str(e)}")
+        return error_response("Failed to retrieve tasks", 500)
+
+@app.route('/admin/tasks', methods=['GET'])
+def get_all_tasks_admin():
+    """Get all tasks (admin endpoint)"""
+    try:
+        # This is an admin endpoint - in production you'd want proper admin authentication
+        status = request.args.get('status')
+        priority = request.args.get('priority')
+        limit = request.args.get('limit', type=int)
+        
         tasks = db_manager.get_all_tasks(status=status, priority=priority, limit=limit)
         
         tasks_data = {
@@ -143,10 +360,10 @@ def get_tasks():
             }
         }
         
-        return success_response(tasks_data, f"Retrieved {len(tasks)} tasks")
+        return success_response(tasks_data, f"Retrieved {len(tasks)} tasks (Admin view)")
         
     except Exception as e:
-        logger.error(f"Error retrieving tasks: {str(e)}")
+        logger.error(f"Error retrieving all tasks: {str(e)}")
         return error_response("Failed to retrieve tasks", 500)
 
 @app.route('/tasks', methods=['POST'])
@@ -170,6 +387,20 @@ def create_task():
         
         # Create task
         task = Task.from_dict(data)
+        
+        # Require user_id for task creation
+        if not data.get('user_id'):
+            return error_response("User authentication required. Please provide user_id.", 401)
+        
+        # Verify user exists
+        user = db_manager.get_user_by_id(data['user_id'])
+        if not user:
+            return error_response("Invalid user ID", 400)
+        
+        # Associate task with user
+        task.user_id = user.id
+        task.user_email = user.email
+        
         created_task = db_manager.create_task(task)
         
         return success_response({"task": created_task.to_dict()}, "Task created successfully", 201)

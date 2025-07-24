@@ -347,6 +347,12 @@
             <!-- Navigation Tabs -->
             <ul class="nav nav-tabs" id="mainTabs" role="tablist">
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="user-tab" data-bs-toggle="tab" data-bs-target="#user-management"
+                        type="button" role="tab">
+                        <i class="fas fa-user"></i> User
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard"
                         type="button" role="tab">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
@@ -374,6 +380,154 @@
 
             <!-- Tab Content -->
             <div class="tab-content" id="mainTabContent">
+                <!-- User Management Tab -->
+                <div class="tab-pane fade" id="user-management" role="tabpanel">
+                    <div class="row">
+                        <!-- Current User Info -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-user-circle"></i> Current User</h5>
+                                </div>
+                                <div class="card-body" id="currentUserInfo">
+                                    <div id="notLoggedIn">
+                                        <p class="text-muted">Not logged in</p>
+                                        <button class="btn btn-primary" onclick="showLoginForm()">Login</button>
+                                        <button class="btn btn-outline-primary"
+                                            onclick="showRegisterForm()">Register</button>
+                                    </div>
+                                    <div id="loggedIn" style="display: none;">
+                                        <p><strong>Name:</strong> <span id="userName">-</span></p>
+                                        <p><strong>Email:</strong> <span id="userEmail">-</span></p>
+                                        <p><strong>Timezone:</strong> <span id="userTimezone">-</span></p>
+                                        <p><strong>Notifications:</strong> <span id="userNotifications">-</span></p>
+                                        <button class="btn btn-outline-primary" onclick="showEditProfile()">Edit
+                                            Profile</button>
+                                        <button class="btn btn-outline-danger" onclick="logout()">Logout</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Login/Register Forms -->
+                        <div class="col-md-6">
+                            <!-- Login Form -->
+                            <div class="card" id="loginForm" style="display: none;">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-sign-in-alt"></i> Login</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="loginFormData">
+                                        <div class="mb-3">
+                                            <label for="loginEmail" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="loginEmail" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="loginPassword" class="form-label">Password</label>
+                                            <input type="password" class="form-control" id="loginPassword" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Login</button>
+                                        <button type="button" class="btn btn-link"
+                                            onclick="hideUserForms()">Cancel</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Register Form -->
+                            <div class="card" id="registerForm" style="display: none;">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-user-plus"></i> Register</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="registerFormData">
+                                        <div class="mb-3">
+                                            <label for="registerName" class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="registerName" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="registerEmail" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="registerEmail" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="registerPassword" class="form-label">Password</label>
+                                            <input type="password" class="form-control" id="registerPassword" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="registerTimezone" class="form-label">Timezone</label>
+                                            <select class="form-control" id="registerTimezone">
+                                                <option value="UTC">UTC</option>
+                                                <option value="America/New_York">Eastern Time</option>
+                                                <option value="America/Chicago">Central Time</option>
+                                                <option value="America/Denver">Mountain Time</option>
+                                                <option value="America/Los_Angeles">Pacific Time</option>
+                                                <option value="Asia/Kolkata">India Standard Time</option>
+                                                <option value="Europe/London">Greenwich Mean Time</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="registerNotifications" class="form-label">Notification
+                                                Preferences</label>
+                                            <select class="form-control" id="registerNotifications">
+                                                <option value="both">Email & Calendar</option>
+                                                <option value="email">Email Only</option>
+                                                <option value="calendar">Calendar Only</option>
+                                                <option value="none">None</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-success">Register</button>
+                                        <button type="button" class="btn btn-link"
+                                            onclick="hideUserForms()">Cancel</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Edit Profile Form -->
+                            <div class="card" id="editProfileForm" style="display: none;">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-user-edit"></i> Edit Profile</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="editProfileFormData">
+                                        <div class="mb-3">
+                                            <label for="editName" class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="editName" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="editTimezone" class="form-label">Timezone</label>
+                                            <select class="form-control" id="editTimezone">
+                                                <option value="UTC">UTC</option>
+                                                <option value="America/New_York">Eastern Time</option>
+                                                <option value="America/Chicago">Central Time</option>
+                                                <option value="America/Denver">Mountain Time</option>
+                                                <option value="America/Los_Angeles">Pacific Time</option>
+                                                <option value="Asia/Kolkata">India Standard Time</option>
+                                                <option value="Europe/London">Greenwich Mean Time</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="editNotifications" class="form-label">Notification
+                                                Preferences</label>
+                                            <select class="form-control" id="editNotifications">
+                                                <option value="both">Email & Calendar</option>
+                                                <option value="email">Email Only</option>
+                                                <option value="calendar">Calendar Only</option>
+                                                <option value="none">None</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="editPassword" class="form-label">New Password (optional)</label>
+                                            <input type="password" class="form-control" id="editPassword">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                                        <button type="button" class="btn btn-link"
+                                            onclick="hideUserForms()">Cancel</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Dashboard Tab -->
                 <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
                     <div class="row">

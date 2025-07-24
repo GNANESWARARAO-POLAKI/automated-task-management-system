@@ -19,6 +19,8 @@ class Task:
     updated_at: Optional[datetime] = None
     id: Optional[int] = None
     calendar_event_id: Optional[str] = None
+    user_id: Optional[int] = None  # Foreign key to users table
+    user_email: Optional[str] = None  # Cache user email for quick access
     
     def __post_init__(self):
         if self.created_at is None:
